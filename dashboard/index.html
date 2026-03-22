@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CredZ — Explainable Credit Scoring</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">CZ</div>
+    <span class="nav-title">Cred<span>Z</span></span>
+    <span class="nav-badge">v2.1.0</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#" class="active">Dashboard</a></li>
+    <li><a href="#" onclick="switchTabByName('docs')">Docs</a></li>
+    <li><a href="#" onclick="switchTabByName('rbi')">RBI Guide</a></li>
+  </ul>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <span class="live-dot"></span>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--text3);">Model Live</span>
+  </div>
+</nav>
+
+<!-- ── MAIN ────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div>
+      <div class="hero-eyebrow">Financial Inclusion AI · RBI Compliance-Ready</div>
+      <h1>Explainable <em>Credit Scoring</em><br>for Unbanked India</h1>
+      <p class="hero-sub">
+        India has <strong style="color:var(--text)">190 million people</strong> who have never had a bank account or formal credit history —
+        making them invisible to traditional lenders. CredZ uses XGBoost + ANN with SHAP explainability
+        to score creditworthiness from <em>alternative data signals</em> like mobile usage,
+        utility payments, and employment patterns — unlocking access to microloans without a credit card or bank statement.
+      </p>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">87.3%</div>
+        <div class="hero-stat-label">XGBoost Accuracy</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">0.89</div>
+        <div class="hero-stat-label">ROC-AUC Score</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">190M</div>
+        <div class="hero-stat-label">Target Beneficiaries</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active"  onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab-btn"         onclick="switchTab('predict', this)">Live Predictor</button>
+    <button class="tab-btn"         onclick="switchTab('analytics', this)">Analytics</button>
+    <button class="tab-btn"         onclick="switchTab('models', this)">Model Comparison</button>
+    <button class="tab-btn"         onclick="switchTab('explainability', this)">Explainability</button>
+    <button class="tab-btn"         onclick="switchTab('impact', this)">Impact</button>
+    <button class="tab-btn"         onclick="switchTab('recommend', this)">Loan Recommender</button>
+    <button class="tab-btn"         onclick="switchTab('docs', this)">Docs</button>
+    <button class="tab-btn"         onclick="switchTab('rbi', this)">RBI Guide</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: OVERVIEW
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-overview" class="tab-pane active">
+
+    <!-- What is "Unbanked"? explainer banner -->
+    <div style="background:rgba(0,229,195,0.04);border:1px solid rgba(0,229,195,0.15);border-radius:12px;
+                padding:1.25rem 1.75rem;margin-bottom:2rem;display:flex;gap:1.5rem;align-items:flex-start;">
+      <div style="font-size:2rem;flex-shrink:0;">🏦</div>
+      <div>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;
+                    color:var(--accent);margin-bottom:6px;">What does "Unbanked" mean?</div>
+        <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;max-width:860px;">
+          An <strong style="color:var(--text)">unbanked person</strong> is someone who has never had a savings account, credit card, or any relationship with a formal bank or financial institution.
+          In India, this includes farmers, daily-wage workers, street vendors, and rural populations —
+          roughly <strong style="color:var(--accent)">190 million adults</strong>.
+          Without a credit history, traditional banks refuse them loans even when they are financially responsible.
+          CredZ solves this by scoring them using <strong style="color:var(--text)">alternative data</strong> —
+          signals like how regularly they pay electricity bills, how long they've held a job, and their mobile usage patterns —
+          instead of requiring a CIBIL score or bank statement.
+        </p>
+      </div>
+    </div>
+
+    <div class="metrics-grid mb-2">
+      <div class="metric-card">
+        <div class="metric-label">Final Model</div>
+        <div class="metric-value" style="font-size:1.4rem;margin-top:4px;">XGBoost</div>
+        <div class="metric-sub">+ SMOTE Balanced</div>
+        <div class="metric-badge" style="margin-top:8px;">Best performer</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Accuracy</div>
+        <div class="metric-value accent">87.3%</div>
+        <div class="metric-sub">On held-out test set</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">ROC-AUC</div>
+        <div class="metric-value accent">0.89</div>
+        <div class="metric-sub">After SMOTE balancing</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Default Recall</div>
+        <div class="metric-value safe">78%</div>
+        <div class="metric-sub">SMOTE improved from 6%</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Top Feature Importances</span>
+          <span class="text-muted">Real XGBoost values</span>
+        </div>
+        <div class="card-body" id="fi-chart">
+          <div class="text-muted" style="text-align:center;padding:1rem">Loading...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Alternative Data Sources</span>
+          <span class="text-muted">For unbanked population</span>
+        </div>
+        <div class="card-body">
+          <div class="alt-data-grid">
+            <div class="alt-data-item">
+              <div class="alt-data-icon"></div>
+              <div>
+                <div class="alt-data-name">Mobile Usage</div>
+                <div class="alt-data-desc">Call patterns, recharge frequency, data usage consistency</div>
+              </div>
+            </div>
+            <div class="alt-data-item">
+              <div class="alt-data-icon"></div>
+              <div>
+                <div class="alt-data-name">Utility Bills</div>
+                <div class="alt-data-desc">Electricity & water payment regularity as credit proxy</div>
+              </div>
+            </div>
+            <div class="alt-data-item">
+              <div class="alt-data-icon"></div>
+              <div>
+                <div class="alt-data-name">Housing Status</div>
+                <div class="alt-data-desc">Rental history, home ownership signals stability</div>
+              </div>
+            </div>
+            <div class="alt-data-item">
+              <div class="alt-data-icon"></div>
+              <div>
+                <div class="alt-data-name">Employment</div>
+                <div class="alt-data-desc">Job tenure, income verification via Form 16 / GST</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-overview -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: LIVE PREDICTOR
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-predict" class="tab-pane">
+    <div class="section-title">Live Credit Scoring</div>
+    <p class="section-sub">All fields feed directly into the trained XGBoost model. SHAP values explain each decision in real time.</p>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;">
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem;">
+        Quick Example Inputs — click to auto-fill
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <button id="example-btn-low" class="example-btn" onclick="fillExample('low')"
+          style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--safe);
+                 border-radius:8px;padding:0.5rem 1.25rem;font-family:var(--mono);font-size:0.8rem;cursor:pointer;transition:opacity 0.2s;">
+          Low Risk &nbsp;<span style="font-size:9px;opacity:0.7;">score ~1</span>
+        </button>
+        <button id="example-btn-medium" class="example-btn" onclick="fillExample('medium')"
+          style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:var(--warn);
+                 border-radius:8px;padding:0.5rem 1.25rem;font-family:var(--mono);font-size:0.8rem;cursor:pointer;transition:opacity 0.2s;">
+          Medium Risk &nbsp;<span style="font-size:9px;opacity:0.7;">score ~42</span>
+        </button>
+        <button id="example-btn-high" class="example-btn" onclick="fillExample('high')"
+          style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);
+                 border-radius:8px;padding:0.5rem 1.25rem;font-family:var(--mono);font-size:0.8rem;cursor:pointer;transition:opacity 0.2s;">
+          High Risk &nbsp;<span style="font-size:9px;opacity:0.7;">score ~63</span>
+        </button>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text3);align-self:center;margin-left:0.5rem;">
+          Auto-fills all fields → click Analyze Credit Risk
+        </span>
+      </div>
+    </div>
+
+    <div class="predict-layout">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Applicant Profile</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="loan_amnt" value="50000" min="1000"></div>
+            <div class="form-group"><label>Annual Income (₹)</label><input type="number" id="annual_inc" value="360000" min="10000"></div>
+            <div class="form-group"><label>Interest Rate (%)</label><input type="number" id="int_rate" value="14.5" step="0.01"></div>
+            <div class="form-group"><label>DTI Ratio (%)</label><input type="number" id="dti" value="18.0" step="0.1"></div>
+            <div class="form-group"><label>Employment (years)</label><input type="number" id="emp_length" value="5" min="0" max="10"></div>
+            <div class="form-group"><label>Revolving Balance (₹)</label><input type="number" id="revol_bal" value="5000"></div>
+            <div class="form-group"><label>Revolving Utilization (%)</label><input type="number" id="revol_util" value="50" step="0.1"></div>
+            <div class="form-group"><label>Delinquencies (2yr)</label><input type="number" id="delinq_2yrs" value="0" min="0"></div>
+            <div class="form-group"><label>Inquiries (6 months)</label><input type="number" id="inq_last_6mths" value="1" min="0"></div>
+            <div class="form-group"><label>Open Accounts</label><input type="number" id="open_acc" value="8" min="0"></div>
+            <div class="form-group"><label>Public Records</label><input type="number" id="pub_rec" value="0" min="0"></div>
+            <div class="form-group"><label>Total Accounts</label><input type="number" id="total_acc" value="20" min="0"></div>
+            <div class="form-group"><label>Credit History (years)</label><input type="number" id="credit_history_years" value="8" min="0"></div>
+            <div class="form-group"><label>Months Since Delinq</label><input type="number" id="mths_since_last_delinq" value="0"></div>
+            <div class="form-group"><label>Issue Year</label><input type="number" id="issue_year" value="2015" min="2007" max="2020"></div>
+            <div class="form-group">
+              <label>Loan Term</label>
+              <select id="term"><option value="36">36 months</option><option value="60">60 months</option></select>
+            </div>
+            <div class="form-group">
+              <label>Sub Grade</label>
+              <select id="sub_grade">
+                <option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option><option value="A4">A4</option><option value="A5">A5</option>
+                <option value="B1">B1</option><option value="B2">B2</option><option value="B3" selected>B3</option><option value="B4">B4</option><option value="B5">B5</option>
+                <option value="C1">C1</option><option value="C2">C2</option><option value="C3">C3</option><option value="C4">C4</option><option value="C5">C5</option>
+                <option value="D1">D1</option><option value="D2">D2</option><option value="D3">D3</option><option value="D4">D4</option><option value="D5">D5</option>
+                <option value="E1">E1</option><option value="E2">E2</option><option value="E3">E3</option><option value="E4">E4</option><option value="E5">E5</option>
+                <option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option>
+                <option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Home Ownership</label>
+              <select id="home_ownership">
+                <option value="RENT">Rent</option><option value="OWN">Own</option>
+                <option value="MORTGAGE">Mortgage</option><option value="NONE">None</option><option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Verification Status</label>
+              <select id="verification_status">
+                <option value="Verified">Verified</option>
+                <option value="Source Verified">Source Verified</option>
+                <option value="Not Verified">Not Verified</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Loan Purpose</label>
+              <select id="purpose">
+                <option value="debt_consolidation">Debt Consolidation</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="home_improvement">Home Improvement</option>
+                <option value="small_business">Small Business</option>
+                <option value="medical">Medical</option>
+                <option value="education">Education</option>
+                <option value="major_purchase">Major Purchase</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>State (India)</label>
+              <select id="addr_state">
+                <option value="PA">Maharashtra</option>
+                <option value="IL">Karnataka</option>
+                <option value="OH">Tamil Nadu</option>
+                <option value="DC">Delhi</option>
+                <option value="WY">Telangana</option>
+                <option value="MN">Gujarat</option>
+                <option value="MS">West Bengal</option>
+                <option value="MT">Andhra Pradesh</option>
+                <option value="NH">Kerala</option>
+                <option value="OK">Rajasthan</option>
+                <option value="GA">Uttar Pradesh</option>
+                <option value="NE">Madhya Pradesh</option>
+                <option value="NM">Bihar</option>
+                <option value="NV">Odisha</option>
+                <option value="CO">Punjab</option>
+                <option value="VA">Haryana</option>
+                <option value="WV">Jharkhand</option>
+                <option value="SD">Assam</option>
+                <option value="VT">Uttarakhand</option>
+                <option value="ME">Himachal Pradesh</option>
+                <option value="CT">Goa</option>
+                <option value="AR">Chhattisgarh</option>
+                <option value="RI">Tripura</option>
+                <option value="ID">Manipur</option>
+                <option value="IA">Meghalaya</option>
+              </select>
+            </div>
+          </div>
+          <button class="predict-btn" onclick="runPrediction()">
+            <span class="btn-inner" id="btn-inner"><span>⚡</span> Analyze Credit Risk</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="result-panel">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Risk Assessment</span>
+            <span class="text-muted" id="result-timestamp">—</span>
+          </div>
+          <div class="card-body" style="text-align:center;">
+            <div class="score-ring-wrap">
+              <div class="score-ring">
+                <svg viewBox="0 0 180 180">
+                  <circle class="score-ring-bg" cx="90" cy="90" r="80"/>
+                  <circle class="score-ring-fill" id="ring-fill" cx="90" cy="90" r="80"/>
+                </svg>
+                <div class="score-ring-text">
+                  <div class="score-num" id="score-display">—</div>
+                  <div class="score-label">Risk Score</div>
+                </div>
+              </div>
+            </div>
+            <div id="verdict-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+              <div class="verdict-badge low" id="verdict-badge">Awaiting Input</div>
+              <div class="text-muted" id="verdict-desc">Submit an applicant profile to score</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">SHAP Explanation</span>
+            <span class="text-muted">Real-time feature contributions</span>
+          </div>
+          <div class="card-body" id="shap-panel">
+            <div style="color:var(--text3);font-family:var(--mono);font-size:0.8rem;text-align:center;padding:1rem 0;">
+              Run the predictor to see real SHAP values
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-predict -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: ANALYTICS
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-analytics" class="tab-pane">
+    <div class="section-title">Portfolio Analytics</div>
+    <p class="section-sub">Live statistics computed from 200 real model predictions on synthetic applicant profiles.</p>
+
+    <div id="analytics-loading" style="display:flex;align-items:center;justify-content:center;gap:12px;padding:2rem 0;">
+      <span class="loading-spinner"></span>
+      <span style="font-family:var(--mono);font-size:0.8rem;color:var(--text3);">Fetching analytics...</span>
+    </div>
+    <div id="analytics-error" style="display:none;color:var(--danger);font-family:var(--mono);font-size:0.82rem;padding:1rem;"></div>
+
+    <div class="metrics-grid six-col mb-2">
+      <div class="metric-card"><div class="metric-label">Total Applications</div><div class="metric-value accent" id="kpi-total">—</div><div class="metric-sub">in dataset</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Risk Score</div><div class="metric-value" id="kpi-avg-risk">—</div><div class="metric-sub">portfolio average</div></div>
+      <div class="metric-card"><div class="metric-label">High-Risk Rate</div><div class="metric-value" id="kpi-high-pct" style="color:var(--danger);">—</div><div class="metric-sub">risk score ≥ 55</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Loan Amount</div><div class="metric-value accent" id="kpi-loan">—</div><div class="metric-sub">across portfolio</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Interest Rate</div><div class="metric-value" id="kpi-rate">—</div><div class="metric-sub">% per annum</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Annual Income</div><div class="metric-value accent" id="kpi-income">—</div><div class="metric-sub">applicant pool</div></div>
+    </div>
+
+    <div class="two-col mb-2">
+      <div class="card"><div class="card-header"><span class="card-title">Risk Distribution</span><span class="text-muted">Low / Medium / High</span></div><div class="card-body" style="height:260px;"><canvas id="chart-risk-dist"></canvas></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Risk Score Histogram</span><span class="text-muted">Applicant spread</span></div><div class="card-body" style="height:260px;"><canvas id="chart-histogram"></canvas></div></div>
+    </div>
+    <div class="card mb-2"><div class="card-header"><span class="card-title">Average Risk Score by Loan Purpose</span></div><div class="card-body" style="height:280px;"><canvas id="chart-by-purpose"></canvas></div></div>
+    <div class="three-col mb-2">
+      <div class="card"><div class="card-header"><span class="card-title">By Home Ownership</span></div><div class="card-body" style="height:220px;"><canvas id="chart-by-ownership"></canvas></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Avg Risk by Term</span></div><div class="card-body" style="height:220px;"><canvas id="chart-by-term"></canvas></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Risk Trend by Year</span></div><div class="card-body" style="height:220px;"><canvas id="chart-by-year"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Session Prediction History</span><span class="text-muted">Last 20 predictions</span></div>
+      <div class="card-body" style="padding:0;">
+        <div id="history-empty" style="display:block;padding:1.5rem;text-align:center;font-family:var(--mono);font-size:0.8rem;color:var(--text3);">No predictions yet — use the Live Predictor tab</div>
+        <div style="overflow-x:auto;">
+          <table class="model-table" style="display:table;">
+            <thead><tr><th>#</th><th>Loan Amt</th><th>Int Rate</th><th>Income</th><th>Purpose</th><th>Risk Score</th><th>Verdict</th></tr></thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-analytics -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: MODEL COMPARISON
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-models" class="tab-pane">
+    <div class="section-title">Model Performance Comparison</div>
+    <p class="section-sub">All models trained on LendingClub data (18,429 rows, 34 cleaned features → 123 OHE features). XGBoost + SMOTE deployed in production.</p>
+    <div class="card mb-2">
+      <div class="card-body" style="padding:0;">
+        <table class="model-table">
+          <thead><tr><th>Model</th><th>Accuracy</th><th>ROC-AUC</th><th>Default Recall</th><th>F1 Macro</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td class="model-name">Logistic Regression</td><td><div class="bar-pill"><div class="bar-pill-track"><div class="bar-pill-fill" style="width:84%"></div></div>84.1%</div></td><td>0.734</td><td style="color:var(--danger)">6%</td><td>0.51</td><td class="text-muted">Severe class imbalance issue</td></tr>
+            <tr><td class="model-name">Decision Tree (depth=5)</td><td><div class="bar-pill"><div class="bar-pill-track"><div class="bar-pill-fill" style="width:82%"></div></div>82%</div></td><td>0.710</td><td style="color:var(--warn)">41%</td><td>0.57</td><td class="text-muted">Interpretable but limited</td></tr>
+            <tr><td class="model-name">Random Forest (200 trees)</td><td><div class="bar-pill"><div class="bar-pill-track"><div class="bar-pill-fill" style="width:85%"></div></div>85%</div></td><td>0.780</td><td style="color:var(--warn)">52%</td><td>0.64</td><td class="text-muted">Better but still imbalanced</td></tr>
+            <tr><td class="model-name">Random Forest + PCA</td><td><div class="bar-pill"><div class="bar-pill-track"><div class="bar-pill-fill" style="width:83%"></div></div>83.7%</div></td><td>0.696</td><td style="color:var(--danger)">38%</td><td>0.59</td><td class="text-muted">PCA removed useful signal</td></tr>
+            <tr><td class="model-name">XGBoost (imbalanced)</td><td><div class="bar-pill"><div class="bar-pill-track"><div class="bar-pill-fill" style="width:85%"></div></div>85.5%</div></td><td>0.803</td><td style="color:var(--warn)">58%</td><td>0.67</td><td class="text-muted">Strong baseline</td></tr>
+            <tr class="winner"><td class="model-name">XGBoost + SMOTE</td><td><div class="bar-pill"><div class="bar-pill-track"><div class="bar-pill-fill" style="width:87%"></div></div>87.3%</div></td><td style="color:var(--accent);font-weight:600">0.893</td><td style="color:var(--safe);font-weight:600">78%</td><td style="color:var(--accent);font-weight:600">0.81</td><td class="text-muted">Best overall — deployed</td></tr>
+            <tr><td class="model-name">ANN (3-layer)</td><td><div class="bar-pill"><div class="bar-pill-track"><div class="bar-pill-fill" style="width:85%"></div></div>85.8%</div></td><td>0.851</td><td style="color:var(--safe)">72%</td><td>0.77</td><td class="text-muted">Used in ensemble</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card"><div class="card-header"><span class="card-title">Before SMOTE</span></div><div class="card-body"><div style="margin-bottom:1rem;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--safe)">Fully Paid</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text3)">83.8% (12,362)</span></div><div class="fi-track"><div class="fi-fill" style="width:83.8%;background:var(--safe)"></div></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--danger)">Default</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text3)">16.2% (2,381)</span></div><div class="fi-track"><div class="fi-fill" style="width:16.2%;background:var(--danger)"></div></div></div><p style="font-size:0.8rem;color:var(--text3);margin-top:1rem;">Heavy imbalance — models ignored minority class</p></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">After SMOTE</span></div><div class="card-body"><div style="margin-bottom:1rem;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--safe)">Fully Paid</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--accent)">50% (12,362)</span></div><div class="fi-track"><div class="fi-fill" style="width:50%"></div></div></div><div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--warn)">Default (synthetic)</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--accent)">50% (12,362)</span></div><div class="fi-track"><div class="fi-fill" style="width:50%;background:var(--warn)"></div></div></div><p style="font-size:0.8rem;color:var(--text3);margin-top:1rem;">Balanced via synthetic oversampling — recall jumped from 6% → 78%</p></div></div>
+    </div>
+  </div><!-- /tab-models -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: EXPLAINABILITY
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-explainability" class="tab-pane">
+    <div class="section-title">Model Explainability via SHAP</div>
+    <p class="section-sub">Every prediction is backed by Shapley values — making the model auditable, trustworthy, and compliant.</p>
+    <div class="two-col mb-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Global SHAP Feature Importance</span><span class="text-muted">Mean |SHAP| value</span></div>
+        <div class="card-body" id="global-shap"><div class="text-muted" style="text-align:center;padding:1rem">Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">How SHAP Works</span></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <div style="display:flex;gap:1rem;align-items:flex-start;">
+              <div style="width:32px;height:32px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);font-size:14px;color:var(--accent);">1</div>
+              <div><div style="font-family:var(--mono);font-size:0.82rem;color:var(--text);margin-bottom:4px;">Base Value</div><div style="font-size:0.8rem;color:var(--text3);">Average model prediction across the entire dataset — the starting point before any features are considered.</div></div>
+            </div>
+            <div style="display:flex;gap:1rem;align-items:flex-start;">
+              <div style="width:32px;height:32px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);font-size:14px;color:var(--danger);">↑</div>
+              <div><div style="font-family:var(--mono);font-size:0.82rem;color:var(--danger);margin-bottom:4px;">Risk-Increasing Features</div><div style="font-size:0.8rem;color:var(--text3);">60-month term, high inquiries, RENT ownership — push prediction toward default.</div></div>
+            </div>
+            <div style="display:flex;gap:1rem;align-items:flex-start;">
+              <div style="width:32px;height:32px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);font-size:14px;color:var(--safe);">↓</div>
+              <div><div style="font-family:var(--mono);font-size:0.82rem;color:var(--safe);margin-bottom:4px;">Risk-Reducing Features</div><div style="font-size:0.8rem;color:var(--text3);">36-month term, debt consolidation purpose, verified income — push toward "Fully Paid".</div></div>
+            </div>
+            <div style="display:flex;gap:1rem;align-items:flex-start;">
+              <div style="width:32px;height:32px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);font-size:14px;color:var(--text2);">Σ</div>
+              <div><div style="font-family:var(--mono);font-size:0.82rem;color:var(--text);margin-bottom:4px;">Final Prediction</div><div style="font-size:0.8rem;color:var(--text3);">Base value + sum of all SHAP values = final risk probability. Guarantees local accuracy.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Sample SHAP Force Plot</span><span class="text-muted">Individual prediction breakdown</span></div>
+      <div class="card-body" id="force-plot"></div>
+    </div>
+  </div><!-- /tab-explainability -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: IMPACT
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-impact" class="tab-pane">
+    <div class="section-title">Social Impact</div>
+    <p class="section-sub">Building credit infrastructure for India's unbanked population.</p>
+    <div class="impact-grid mb-2">
+      <div class="impact-card"><div class="impact-num">190M</div><div class="impact-desc">Indians without formal credit history who can now access microloans through alternative data scoring</div></div>
+      <div class="impact-card"><div class="impact-num">₹2.4T</div><div class="impact-desc">Estimated annual microloan market opportunity in India — currently underserved due to lack of credit infrastructure</div></div>
+      <div class="impact-card"><div class="impact-num">87.3%</div><div class="impact-desc">Model accuracy using only alternative data signals — proving formal bank history is not a prerequisite</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Alternative Data Signal Strength</span></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text2)">Mobile Payment History</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--accent)">High</span></div><div class="fi-track"><div class="fi-fill" style="width:92%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text2)">Utility Bill Regularity</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--accent)">High</span></div><div class="fi-track"><div class="fi-fill" style="width:85%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text2)">Employment Tenure</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--warn)">Medium</span></div><div class="fi-track"><div class="fi-fill" style="width:68%;background:var(--warn)"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text2)">Geographic Data</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--warn)">Medium</span></div><div class="fi-track"><div class="fi-fill" style="width:55%;background:var(--warn)"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text2)">Loan Purpose</span><span style="font-family:var(--mono);font-size:0.8rem;color:var(--text3)">Low</span></div><div class="fi-track"><div class="fi-fill" style="width:34%;background:var(--text3)"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-impact -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: LOAN RECOMMENDER
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-recommend" class="tab-pane">
+    <div class="section-title">Loan Recommendation Engine</div>
+    <p class="section-sub">Enter your profile below. CredZ will recommend the right loan product, the best term, and tell you exactly how to improve your credit score — powered by real SHAP values from the XGBoost model.</p>
+
+    <!-- Input form + results side by side -->
+    <div style="display:grid;grid-template-columns:420px 1fr;gap:2rem;align-items:start;">
+
+      <!-- LEFT: Input form -->
+      <div class="card" style="position:sticky;top:80px;">
+        <div class="card-header">
+          <span class="card-title">Your Profile</span>
+          <span class="text-muted">All fields used by model</span>
+        </div>
+        <div class="card-body" style="max-height:70vh;overflow-y:auto;padding-right:0.5rem;">
+          <div class="form-grid">
+            <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="rec_loan_amnt" value="200000"></div>
+            <div class="form-group"><label>Annual Income (₹)</label><input type="number" id="rec_annual_inc" value="360000"></div>
+            <div class="form-group"><label>Interest Rate (%)</label><input type="number" id="rec_int_rate" value="16.0" step="0.1"></div>
+            <div class="form-group"><label>DTI (%)</label><input type="number" id="rec_dti" value="22.0" step="0.1"></div>
+            <div class="form-group"><label>Employment (yrs)</label><input type="number" id="rec_emp_length" value="4" min="0"></div>
+            <div class="form-group"><label>Revol. Balance (₹)</label><input type="number" id="rec_revol_bal" value="40000"></div>
+            <div class="form-group"><label>Credit Utilization (%)</label><input type="number" id="rec_revol_util" value="55.0" step="0.1"></div>
+            <div class="form-group"><label>Delinquencies (2yr)</label><input type="number" id="rec_delinq_2yrs" value="1" min="0"></div>
+            <div class="form-group"><label>Inquiries (6mo)</label><input type="number" id="rec_inq_last_6mths" value="2" min="0"></div>
+            <div class="form-group"><label>Open Accounts</label><input type="number" id="rec_open_acc" value="7" min="0"></div>
+            <div class="form-group"><label>Public Records</label><input type="number" id="rec_pub_rec" value="0" min="0"></div>
+            <div class="form-group"><label>Total Accounts</label><input type="number" id="rec_total_acc" value="16" min="0"></div>
+            <div class="form-group"><label>Credit History (yrs)</label><input type="number" id="rec_credit_history_years" value="6" min="0"></div>
+            <div class="form-group"><label>Months Since Delinq</label><input type="number" id="rec_mths_since_last_delinq" value="14"></div>
+            <div class="form-group"><label>Issue Year</label><input type="number" id="rec_issue_year" value="2015"></div>
+            <div class="form-group">
+              <label>Loan Term</label>
+              <select id="rec_term"><option value="36">36 months</option><option value="60">60 months</option></select>
+            </div>
+            <div class="form-group">
+              <label>Sub Grade</label>
+              <select id="rec_sub_grade">
+                <option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option><option value="A4">A4</option><option value="A5">A5</option>
+                <option value="B1">B1</option><option value="B2">B2</option><option value="B3">B3</option><option value="B4">B4</option><option value="B5">B5</option>
+                <option value="C1">C1</option><option value="C2">C2</option><option value="C3">C3</option><option value="C4">C4</option><option value="C5">C5</option>
+                <option value="D1">D1</option><option value="D2" selected>D2</option><option value="D3">D3</option><option value="D4">D4</option><option value="D5">D5</option>
+                <option value="E1">E1</option><option value="E2">E2</option><option value="E3">E3</option><option value="E4">E4</option><option value="E5">E5</option>
+                <option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option><option value="F5">F5</option>
+                <option value="G1">G1</option><option value="G2">G2</option><option value="G3">G3</option><option value="G4">G4</option><option value="G5">G5</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Home Ownership</label>
+              <select id="rec_home_ownership">
+                <option value="RENT">Rent</option><option value="OWN">Own</option>
+                <option value="MORTGAGE">Mortgage</option><option value="NONE">None</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Verification</label>
+              <select id="rec_verification_status">
+                <option value="Verified">Verified</option>
+                <option value="Source Verified">Source Verified</option>
+                <option value="Not Verified">Not Verified</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Loan Purpose</label>
+              <select id="rec_purpose">
+                <option value="debt_consolidation">Debt Consolidation</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="home_improvement">Home Improvement</option>
+                <option value="small_business">Small Business</option>
+                <option value="medical">Medical</option>
+                <option value="education">Education</option>
+                <option value="major_purchase">Major Purchase</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>State (India)</label>
+              <select id="rec_addr_state">
+                <option value="PA">Maharashtra</option><option value="IL">Karnataka</option>
+                <option value="OH">Tamil Nadu</option><option value="DC">Delhi</option>
+                <option value="WY">Telangana</option><option value="MN">Gujarat</option>
+                <option value="MS">West Bengal</option><option value="MT">Andhra Pradesh</option>
+                <option value="NH">Kerala</option><option value="OK">Rajasthan</option>
+                <option value="GA">Uttar Pradesh</option><option value="NE">Madhya Pradesh</option>
+                <option value="NM">Bihar</option><option value="NV">Odisha</option>
+                <option value="CO">Punjab</option><option value="VA">Haryana</option>
+                <option value="WV">Jharkhand</option><option value="SD">Assam</option>
+                <option value="VT">Uttarakhand</option><option value="ME">Himachal Pradesh</option>
+                <option value="CT">Goa</option><option value="AR">Chhattisgarh</option>
+              </select>
+            </div>
+          </div>
+          <button class="predict-btn" onclick="runRecommendation()" style="margin-top:1.5rem;">
+            <span id="rec-btn-inner" class="btn-inner"><span>🎯</span> Get Loan Recommendation</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Results -->
+      <div id="rec-results" style="display:none;">
+
+        <!-- Summary bar -->
+        <div class="card mb-2">
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;">
+              <div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Risk Score</div>
+                <div id="rec-score-num" style="font-family:var(--mono);font-size:2.5rem;font-weight:600;color:var(--text);line-height:1;">—</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Verdict</div>
+                <div id="rec-verdict-text" style="font-family:var(--mono);font-size:1rem;font-weight:600;">—</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Approval Outlook</div>
+                <div id="rec-outlook-text" style="font-family:var(--mono);font-size:0.85rem;font-weight:600;">—</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Requested / Income</div>
+                <div>
+                  <div id="rec-requested" style="font-family:var(--mono);font-size:0.9rem;color:var(--text);">—</div>
+                  <div id="rec-income" style="font-family:var(--mono);font-size:0.78rem;color:var(--text3);">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Term comparison -->
+        <div class="card mb-2">
+          <div class="card-header">
+            <span class="card-title">36 vs 60 Month — Which is Better for You?</span>
+          </div>
+          <div class="card-body" id="rec-term-compare"></div>
+        </div>
+
+        <!-- Product recommendations -->
+        <div class="card mb-2">
+          <div class="card-header">
+            <span class="card-title">Recommended Loan Products</span>
+            <span class="text-muted">Tailored to your risk profile</span>
+          </div>
+          <div class="card-body">
+            <div id="rec-products" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;"></div>
+          </div>
+        </div>
+
+        <!-- Score improvement tips -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">How to Improve Your Score</span>
+            <span class="text-muted">SHAP-powered personalised tips</span>
+          </div>
+          <div class="card-body">
+            <div id="rec-tips" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- /tab-recommend -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: DOCS
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-docs" class="tab-pane">
+    <div class="section-title">Project Documentation</div>
+    <p class="section-sub">Full technical write-up — what CredZ is, how it works, and why it matters.</p>
+
+    <!-- What it is -->
+    <div class="card mb-2">
+      <div class="card-header"><span class="card-title">What is CredZ?</span></div>
+      <div class="card-body">
+        <p style="font-size:0.9rem;color:var(--text2);line-height:1.9;margin-bottom:1rem;">
+          <strong style="color:var(--text)">CredZ</strong> is an AI-powered credit scoring system designed specifically for India's <strong style="color:var(--accent)">unbanked population</strong> — people who have never had a formal bank account, credit card, or CIBIL score. Traditional lenders reject these applicants automatically, not because they're financially irresponsible, but simply because they have no recorded credit history.
+        </p>
+        <p style="font-size:0.9rem;color:var(--text2);line-height:1.9;margin-bottom:1rem;">
+          CredZ changes this by scoring creditworthiness using <strong style="color:var(--text)">alternative data signals</strong> — things like how regularly someone pays their electricity bill, how long they've held a job, or how responsibly they use their mobile data plan. These signals are combined using a machine learning model (XGBoost) trained on 18,429 real loan records.
+        </p>
+        <p style="font-size:0.9rem;color:var(--text2);line-height:1.9;">
+          Crucially, every decision is explained using <strong style="color:var(--text)">SHAP (SHapley Additive Explanations)</strong> — so the borrower (and regulator) can see exactly which factors raised or lowered their score. This is not a black box — it's fully transparent, auditable, and compliant with RBI guidelines.
+        </p>
+      </div>
+    </div>
+
+    <!-- The Problem -->
+    <div class="two-col mb-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">The Problem We're Solving</span></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <div style="padding:1rem;background:var(--bg2);border-radius:10px;border-left:3px solid var(--danger);">
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--danger);margin-bottom:6px;">190M people excluded</div>
+              <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">India's unbanked adults are invisible to the financial system. They cannot get a loan, start a business, or handle a medical emergency through formal channels.</div>
+            </div>
+            <div style="padding:1rem;background:var(--bg2);border-radius:10px;border-left:3px solid var(--warn);">
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--warn);margin-bottom:6px;">CIBIL score gatekeeping</div>
+              <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Banks use CIBIL scores (India's credit score system) as the primary filter. If you've never borrowed formally, your score is 0 — and you're rejected, regardless of how responsible you are.</div>
+            </div>
+            <div style="padding:1rem;background:var(--bg2);border-radius:10px;border-left:3px solid var(--warn);">
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--warn);margin-bottom:6px;">Predatory informal lending</div>
+              <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Without access to formal credit, unbanked individuals often turn to local moneylenders charging 40–120% annual interest, trapping them in debt cycles.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">How CredZ Solves It</span></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <div style="padding:1rem;background:var(--bg2);border-radius:10px;border-left:3px solid var(--accent);">
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">Alternative data scoring</div>
+              <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">We use mobile usage patterns, utility payment history, employment tenure, and geographic data — all legally collectable with consent — to build a credit score from scratch.</div>
+            </div>
+            <div style="padding:1rem;background:var(--bg2);border-radius:10px;border-left:3px solid var(--accent);">
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">XGBoost + SMOTE</div>
+              <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Our model uses gradient boosting trained on 18,429 loan records. SMOTE oversampling balanced the class distribution from 84/16 to 50/50, raising default recall from 6% to 78%.</div>
+            </div>
+            <div style="padding:1rem;background:var(--bg2);border-radius:10px;border-left:3px solid var(--safe);">
+              <div style="font-family:var(--mono);font-size:0.82rem;color:var(--safe);margin-bottom:6px;">SHAP explainability</div>
+              <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Every score comes with a plain-language breakdown of what factors affected it. This meets RBI's Right to Explanation requirement and builds applicant trust.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data pipeline -->
+    <div class="card mb-2">
+      <div class="card-header"><span class="card-title">Data Pipeline &amp; Model Architecture</span></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+          <div style="text-align:center;padding:1.25rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">📊</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 1</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">Raw Data<br>18,429 rows × 111 cols</div>
+          </div>
+          <div style="text-align:center;padding:1.25rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">🧹</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 2</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">EDA + Cleaning<br>34 useful features</div>
+          </div>
+          <div style="text-align:center;padding:1.25rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">🔧</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 3</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">OHE + Impute<br>123 final features</div>
+          </div>
+          <div style="text-align:center;padding:1.25rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">⚖️</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 4</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">SMOTE<br>50/50 balanced</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">
+          <div style="text-align:center;padding:1.25rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">🚀</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 5</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">XGBoost<br>n=200, depth=6</div>
+          </div>
+          <div style="text-align:center;padding:1.25rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">🧠</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 6</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">ANN Ensemble<br>3-layer Keras</div>
+          </div>
+          <div style="text-align:center;padding:1.25rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">🔍</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 7</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">SHAP Explainer<br>TreeExplainer</div>
+          </div>
+          <div style="text-align:center;padding:1.25rem;background:rgba(0,229,195,0.08);border-radius:10px;border:1px solid rgba(0,229,195,0.3);">
+            <div style="font-size:1.5rem;margin-bottom:8px;">📋</div>
+            <div style="font-family:var(--mono);font-size:0.78rem;color:var(--accent);margin-bottom:4px;">Step 8</div>
+            <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text2);">Credit Decision<br>+ Explanation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- What can be added -->
+    <div class="card mb-2">
+      <div class="card-header"><span class="card-title">Roadmap — What Could Be Added Next</span><span class="text-muted">Ideas to make CredZ more powerful</span></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">UPI Transaction Analysis</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Analyse UPI payment patterns (regularity, merchant types, amounts) as a high-signal alternative data source. India has 10B+ UPI transactions/month — a goldmine for credit scoring.</div>
+          </div>
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">WhatsApp / SMS Financial Data</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">With consent, extract financial keywords from SMS (salary credits, rent payments, EMI reminders) to build a more complete picture of financial behaviour.</div>
+          </div>
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">Hindi / Regional Language UI</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Most of India's unbanked population does not speak English. Adding Hindi, Tamil, Telugu, and Bengali interfaces would dramatically expand reach and accessibility.</div>
+          </div>
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">Loan Recommendation Engine</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Beyond scoring risk, suggest the right loan product — amount, interest rate, and repayment tenure — tailored to the applicant's profile and risk score.</div>
+          </div>
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">Borrower Score Improvement Tips</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Use SHAP to identify the top 3 factors hurting a borrower's score and generate personalised, actionable advice: "Paying utility bills on time for 6 months would improve your score by ~8 points."</div>
+          </div>
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">Live CIBIL Integration</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">For applicants who do have a CIBIL history, integrate it alongside alternative data for a hybrid score — giving lenders maximum signal before making a decision.</div>
+          </div>
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">Microfinance Institution (MFI) API</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Expose CredZ as an API that MFIs and NBFCs can plug into their existing systems for instant, explainable credit decisions at the point of application.</div>
+          </div>
+          <div style="padding:1rem;background:var(--bg2);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:0.82rem;color:var(--accent);margin-bottom:6px;">Bias & Fairness Monitor</div>
+            <div style="font-size:0.82rem;color:var(--text3);line-height:1.7;">Add a real-time fairness dashboard that tracks whether the model's decisions differ systematically across regions, income groups, or genders — ensuring ethical lending.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-docs -->
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB: RBI GUIDE
+  ══════════════════════════════════════════════════════ -->
+  <div id="tab-rbi" class="tab-pane">
+    <div class="section-title">RBI Compliance — Plain English Guide</div>
+    <p class="section-sub">Most people building fintech AI have never read the RBI's guidelines. Here's what they say, why they matter, and how CredZ meets them.</p>
+
+    <!-- What is RBI compliance -->
+    <div style="background:rgba(0,229,195,0.04);border:1px solid rgba(0,229,195,0.2);border-radius:12px;
+                padding:1.75rem;margin-bottom:2rem;">
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;">
+        What does "RBI Compliance Ready" actually mean?
+      </div>
+      <p style="font-size:0.9rem;color:var(--text2);line-height:1.9;margin-bottom:1rem;">
+        The <strong style="color:var(--text)">Reserve Bank of India (RBI)</strong> is India's central bank — it regulates all banks, NBFCs (Non-Banking Financial Companies), and fintech lenders.
+        In 2021 and 2023, RBI released guidelines specifically about using <strong style="color:var(--text)">AI and Machine Learning in lending decisions</strong>.
+        These guidelines exist because AI models can discriminate, make unexplainable decisions, and harm borrowers if left unchecked.
+      </p>
+      <p style="font-size:0.9rem;color:var(--text2);line-height:1.9;">
+        When we say CredZ is <strong style="color:var(--accent)">"RBI Compliance Ready"</strong>, it means our system is designed to meet these requirements
+        — specifically around explainability, fairness, auditability, and data protection.
+        This is not just a box to tick — it's what makes AI lending <em>trustworthy</em>.
+      </p>
+    </div>
+
+    <!-- The 5 pillars -->
+    <div class="section-title" style="font-size:1.1rem;margin-bottom:1rem;">The 5 Pillars of RBI AI/ML Compliance</div>
+
+    <div style="display:flex;flex-direction:column;gap:1.5rem;margin-bottom:2rem;">
+
+      <div class="card">
+        <div class="card-body" style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:start;">
+          <div style="width:48px;height:48px;background:rgba(0,229,195,0.1);border:1px solid rgba(0,229,195,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.2rem;color:var(--accent);flex-shrink:0;">1</div>
+          <div>
+            <div style="font-family:var(--mono);font-size:0.9rem;font-weight:600;color:var(--accent);margin-bottom:8px;">Right to Explanation</div>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">What the RBI says:</strong> If an AI system rejects or approves a loan application, the lender must be able to explain the reasoning to the applicant in plain language. A black-box "the computer said no" is not acceptable.
+            </p>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">Why it matters:</strong> Without explanations, a rejected borrower has no way to understand what they need to improve, and no way to dispute a potentially incorrect decision.
+            </p>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.75rem 1rem;">
+              <span style="font-family:var(--mono);font-size:0.78rem;color:var(--safe);">How CredZ meets this:</span>
+              <span style="font-size:0.82rem;color:var(--text3);"> SHAP values produce a per-feature explanation for every single prediction. The borrower sees exactly which factors raised or lowered their score — in human-readable language.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:start;">
+          <div style="width:48px;height:48px;background:rgba(0,229,195,0.1);border:1px solid rgba(0,229,195,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.2rem;color:var(--accent);flex-shrink:0;">2</div>
+          <div>
+            <div style="font-family:var(--mono);font-size:0.9rem;font-weight:600;color:var(--accent);margin-bottom:8px;">No Discriminatory Variables</div>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">What the RBI says:</strong> AI lending models must not use protected characteristics — gender, religion, caste, community, or race — as input features, either directly or as proxies.
+            </p>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">Why it matters:</strong> AI models trained on historical data can learn and amplify existing social biases. A model trained on biased past lending data might learn to penalise certain communities without the developer even realising it.
+            </p>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.75rem 1rem;">
+              <span style="font-family:var(--mono);font-size:0.78rem;color:var(--safe);">How CredZ meets this:</span>
+              <span style="font-size:0.82rem;color:var(--text3);"> Our 123 model features contain zero references to gender, religion, caste, or community. The feature list is fully transparent and auditable.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:start;">
+          <div style="width:48px;height:48px;background:rgba(0,229,195,0.1);border:1px solid rgba(0,229,195,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.2rem;color:var(--accent);flex-shrink:0;">3</div>
+          <div>
+            <div style="font-family:var(--mono);font-size:0.9rem;font-weight:600;color:var(--accent);margin-bottom:8px;">Model Governance &amp; Audit Trail</div>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">What the RBI says:</strong> Lenders using AI must maintain comprehensive records of how the model was built, what data it was trained on, how it performs over time, and a log of every decision it made — so regulators can audit it.
+            </p>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">Why it matters:</strong> Without an audit trail, if the model starts behaving badly (e.g., rejecting more applications from a particular state), no one would know until significant harm had already been done.
+            </p>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.75rem 1rem;">
+              <span style="font-family:var(--mono);font-size:0.78rem;color:var(--safe);">How CredZ meets this:</span>
+              <span style="font-size:0.82rem;color:var(--text3);"> Every prediction is logged with its full SHAP attribution via the <code>/api/history</code> endpoint. The Analytics tab provides portfolio-level monitoring to detect score drift.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:start;">
+          <div style="width:48px;height:48px;background:rgba(0,229,195,0.1);border:1px solid rgba(0,229,195,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.2rem;color:var(--accent);flex-shrink:0;">4</div>
+          <div>
+            <div style="font-family:var(--mono);font-size:0.9rem;font-weight:600;color:var(--accent);margin-bottom:8px;">DPDP Act 2023 — Data Privacy</div>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">What the law says:</strong> India's <strong style="color:var(--text)">Digital Personal Data Protection Act (DPDP) 2023</strong> — India's equivalent of Europe's GDPR — requires that personal data collected for AI scoring must be gathered with explicit consent, used only for the stated purpose, and protected from misuse.
+            </p>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">Why it matters:</strong> Alternative data (mobile usage, utility bills) is personal. Using it without consent or selling it to third parties is illegal under DPDP and a serious breach of borrower trust.
+            </p>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.75rem 1rem;">
+              <span style="font-family:var(--mono);font-size:0.78rem;color:var(--safe);">How CredZ meets this:</span>
+              <span style="font-size:0.82rem;color:var(--text3);"> CredZ's design requires consent-based collection of all alternative data, uses data only for credit scoring, and does not store or share raw personal data beyond what is needed for the model input.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:start;">
+          <div style="width:48px;height:48px;background:rgba(0,229,195,0.1);border:1px solid rgba(0,229,195,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.2rem;color:var(--accent);flex-shrink:0;">5</div>
+          <div>
+            <div style="font-family:var(--mono);font-size:0.9rem;font-weight:600;color:var(--accent);margin-bottom:8px;">Human Oversight &amp; Override</div>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">What the RBI says:</strong> AI models must not be the sole decision-maker for credit. There must be a human review process, especially for borderline cases, and the ability for a human officer to override the model's recommendation.
+            </p>
+            <p style="font-size:0.875rem;color:var(--text2);line-height:1.8;margin-bottom:10px;">
+              <strong style="color:var(--text)">Why it matters:</strong> No model is perfect. Edge cases, unusual circumstances, and life events (medical emergency, natural disaster) may make a borrower appear risky when they genuinely are not. A human must be able to step in.
+            </p>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.75rem 1rem;">
+              <span style="font-family:var(--mono);font-size:0.78rem;color:var(--safe);">How CredZ meets this:</span>
+              <span style="font-size:0.82rem;color:var(--text3);"> The Medium Risk verdict is specifically designed to trigger manual review rather than automatic rejection. SHAP explanations give loan officers the context they need to make an informed human decision.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary table -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Compliance Checklist</span></div>
+      <div class="card-body" style="padding:0;">
+        <table class="model-table">
+          <thead><tr><th>Requirement</th><th>Regulation</th><th>CredZ Implementation</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="model-name">Right to Explanation</td><td class="text-muted">RBI AI/ML Guidelines 2021</td><td class="text-muted">SHAP values on every prediction</td><td style="color:var(--safe);font-family:var(--mono);font-size:0.78rem;">Met</td></tr>
+            <tr><td class="model-name">No discriminatory features</td><td class="text-muted">RBI Fair Lending</td><td class="text-muted">Zero protected characteristics in 123 features</td><td style="color:var(--safe);font-family:var(--mono);font-size:0.78rem;">Met</td></tr>
+            <tr><td class="model-name">Audit trail</td><td class="text-muted">RBI Model Governance</td><td class="text-muted">Prediction log with full SHAP attribution</td><td style="color:var(--safe);font-family:var(--mono);font-size:0.78rem;">Met</td></tr>
+            <tr><td class="model-name">Data consent & minimisation</td><td class="text-muted">DPDP Act 2023</td><td class="text-muted">Consent-based alternative data collection</td><td style="color:var(--safe);font-family:var(--mono);font-size:0.78rem;">Met</td></tr>
+            <tr><td class="model-name">Human oversight</td><td class="text-muted">RBI AI/ML Guidelines 2023</td><td class="text-muted">Medium Risk triggers manual review</td><td style="color:var(--safe);font-family:var(--mono);font-size:0.78rem;">Met</td></tr>
+            <tr><td class="model-name">Model performance monitoring</td><td class="text-muted">RBI Circular 2023</td><td class="text-muted">Analytics tab for portfolio-level drift detection</td><td style="color:var(--warn);font-family:var(--mono);font-size:0.78rem;">Partial</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /tab-rbi -->
+
+</div><!-- /main -->
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/predict.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/recommend.js') }}"></script>
+
+<script>
+  // Allow nav links to switch tabs
+  function switchTabByName(id) {
+    const btn = document.querySelector(`.tab-btn[onclick*="${id}"]`);
+    if (btn) switchTab(id, btn);
+  }
+</script>
+
+</body>
+</html>

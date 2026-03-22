@@ -1,253 +1,171 @@
-import streamlit as st
-import joblib
-import pandas as pd
 import os
-import shap
-import matplotlib.pyplot as plt
+import pandas as pd
+from flask import Flask, render_template, jsonify, request, send_from_directory
+from utils.predict import predict_risk, get_feature_importance
+from utils.recommend import build_recommendation
+from utils.explain import get_shap_explanation
+from utils.preprocess import build_input_df
 
-from utils.preprocess import preprocess_input
-from utils.predict import make_prediction
-from utils.explain import shap_explain
+app = Flask(__name__, static_folder="assets", template_folder="dashboard")
 
-# -----------------------------
-# Load saved objects
-# -----------------------------
-model = joblib.load("models/loan_model.pkl")
-imputer = joblib.load("models/imputer.pkl")
-features = joblib.load("models/model_features.pkl")
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(app.static_folder, "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
-dashboard_file = "dashboard/dashboard_data.csv"
+_BASE     = os.path.dirname(__file__)
+_DASH_CSV = os.path.join(_BASE, "dashboard", "dashboard_data.csv")
 
-# -----------------------------
-# Sidebar Navigation
-# -----------------------------
-st.sidebar.title("Navigation")
+# ── In-memory prediction log (resets on restart; swap for SQLite if needed) ──
+_prediction_log: list[dict] = []
 
-page = st.sidebar.radio(
-    "Go to",
-    ["Loan Prediction", "Risk Dashboard"]
-)
 
-# ======================================================
-# 1️⃣ LOAN PREDICTION PAGE
-# ======================================================
+# ════════════════════════════════════════════════════════════════
+#  PAGES
+# ════════════════════════════════════════════════════════════════
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-if page == "Loan Prediction":
 
-    st.title("💳 Loan Default Risk Predictor")
+# ════════════════════════════════════════════════════════════════
+#  API — PREDICT
+# ════════════════════════════════════════════════════════════════
+@app.route("/api/predict", methods=["POST"])
+def api_predict():
+    """Real XGBoost inference + SHAP for one applicant."""
+    data = request.get_json(force=True)
+    try:
+        input_df  = build_input_df(data)
+        result    = predict_risk(input_df)
+        shap_vals = get_shap_explanation(input_df)
 
-    st.subheader("Enter Loan Details")
-
-    loan_amnt = st.number_input(
-        "Loan Amount",
-        min_value=500,
-        max_value=1000000,
-        value=15000
-    )
-
-    term = st.selectbox(
-        "Loan Term (months)",
-        [36, 60]
-    )
-
-    annual_inc = st.number_input(
-        "Annual Income",
-        min_value=5000,
-        value=50000
-    )
-
-    grade = st.selectbox(
-        "Credit Grade",
-        ["A","B","C","D","E"]
-    )
-
-    home = st.selectbox(
-        "Home Ownership",
-        ["RENT","OWN","MORTGAGE"]
-    )
-
-    purpose = st.selectbox(
-        "Loan Purpose",
-        [
-            "credit_card",
-            "debt_consolidation",
-            "home_improvement"
-        ]
-    )
-
-    # ----------------------------------
-    # Prediction
-    # ----------------------------------
-
-    if st.button("Predict Risk"):
-
-        new_user = {
-            "loan_amnt": loan_amnt,
-            "term": term,
-            "annual_inc": annual_inc,
-            "grade": grade,
-            "home_ownership": home,
-            "purpose": purpose
-        }
-
-        processed = preprocess_input(new_user, features)
-
-        prob, category, arr = make_prediction(
-            model,
-            imputer,
-            processed
-        )
-
-        st.subheader("Prediction Result")
-
-        st.metric(
-            "Default Risk",
-            f"{prob*100:.2f}%"
-        )
-
-        if category == "HIGH RISK":
-            st.error(f"Risk Category: {category}")
-        elif category == "MEDIUM RISK":
-            st.warning(f"Risk Category: {category}")
-        else:
-            st.success(f"Risk Category: {category}")
-
-        # ----------------------------------
-        # SHAP Explainability
-        # ----------------------------------
-
-        shap_values, df, top_features, explainer = shap_explain(
-            model,
-            arr,
-            features
-        )
-
-        st.subheader("Top Risk Factors")
-
-        for f in top_features:
-            st.write("•", f)
-
-        st.subheader("Feature Impact on Prediction")
-
-        fig, ax = plt.subplots()
-
-        shap.bar_plot(
-            shap_values[0],
-            feature_names=features,
-            max_display=6
-        )
-
-        st.pyplot(fig)
-
-        # ----------------------------------
-        # Save Prediction for Dashboard
-        # ----------------------------------
-
-        row = pd.DataFrame({
-            "loan_amount":[loan_amnt],
-            "income":[annual_inc],
-            "grade":[grade],
-            "purpose":[purpose],
-            "risk_score":[prob],
-            "risk_category":[category]
+        # Log the prediction
+        _prediction_log.append({
+            "risk_score":    result["risk_score"],
+            "verdict":       result["verdict"],
+            "verdict_class": result["verdict_class"],
+            "loan_amnt":     data.get("loan_amnt", 0),
+            "int_rate":      data.get("int_rate", 0),
+            "annual_inc":    data.get("annual_inc", 0),
+            "purpose":       data.get("purpose", "—"),
         })
 
-        if not os.path.exists("dashboard"):
-            os.makedirs("dashboard")
+        return jsonify({"success": True, **result, "shap": shap_vals})
 
-        if not os.path.exists(dashboard_file):
-            row.to_csv(dashboard_file, index=False)
-        else:
-            row.to_csv(
-                dashboard_file,
-                mode="a",
-                header=False,
-                index=False
-            )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
 
-# ======================================================
-# 2️⃣ RISK DASHBOARD PAGE
-# ======================================================
 
-elif page == "Risk Dashboard":
+# ════════════════════════════════════════════════════════════════
+#  API — FEATURE IMPORTANCE
+# ════════════════════════════════════════════════════════════════
+@app.route("/api/feature_importance")
+def api_feature_importance():
+    """Top-N real XGBoost feature importances."""
+    return jsonify(get_feature_importance(top_n=12))
 
-    st.title("📊 Loan Portfolio Risk Monitor")
 
-    if not os.path.exists(dashboard_file):
+# ════════════════════════════════════════════════════════════════
+#  API — DASHBOARD ANALYTICS  (feeds charts.js)
+# ════════════════════════════════════════════════════════════════
+@app.route("/api/dashboard")
+def api_dashboard():
+    """
+    Returns aggregate stats computed from dashboard_data.csv
+    (200 real model predictions on synthetic applicants).
+    """
+    df = pd.read_csv(_DASH_CSV)
 
-        st.warning("No prediction data available yet.")
+    # Risk distribution
+    risk_dist = df["risk_category"].value_counts().to_dict()
 
-    else:
+    # Avg risk score by loan purpose
+    by_purpose = (
+        df.groupby("purpose")["risk_score"]
+        .mean()
+        .round(1)
+        .sort_values(ascending=False)
+        .to_dict()
+    )
 
-        df = pd.read_csv(dashboard_file)
+    # Risk score histogram (10 bins)
+    counts, edges = pd.cut(df["risk_score"], bins=10, retbins=True)
+    hist_labels = [f"{int(edges[i])}–{int(edges[i+1])}" for i in range(len(edges)-1)]
+    hist_values = counts.value_counts(sort=False).tolist()
 
-        avg_risk = df["risk_score"].mean()
-        total_loans = len(df)
+    # Avg risk by home ownership
+    by_ownership = (
+        df.groupby("home_ownership")["risk_score"]
+        .mean()
+        .round(1)
+        .to_dict()
+    )
 
-        high_risk = len(
-            df[df["risk_category"] == "HIGH RISK"]
-        )
+    # Avg risk by term
+    by_term = (
+        df.groupby("term")["risk_score"]
+        .mean()
+        .round(1)
+        .to_dict()
+    )
 
-        col1, col2, col3 = st.columns(3)
+    # Monthly trend proxy (by issue_year if available, else flat)
+    by_year = (
+        df.groupby("issue_year")["risk_score"]
+        .mean()
+        .round(1)
+        .to_dict()
+        if "issue_year" in df.columns
+        else {}
+    )
 
-        col1.metric("Total Loans", total_loans)
+    # Summary KPIs
+    kpis = {
+        "total_applications":  int(len(df)),
+        "avg_risk_score":      round(float(df["risk_score"].mean()), 1),
+        "high_risk_pct":       round(float((df["risk_category"] == "High Risk").mean() * 100), 1),
+        "avg_loan_amnt":       int(df["loan_amnt"].mean()),
+        "avg_int_rate":        round(float(df["int_rate"].mean()), 2),
+        "avg_annual_inc":      int(df["annual_inc"].mean()),
+    }
 
-        col2.metric(
-            "Average Risk",
-            f"{avg_risk*100:.2f}%"
-        )
+    return jsonify({
+        "kpis":         kpis,
+        "risk_dist":    risk_dist,
+        "by_purpose":   by_purpose,
+        "hist_labels":  hist_labels,
+        "hist_values":  hist_values,
+        "by_ownership": by_ownership,
+        "by_term":      by_term,
+        "by_year":      by_year,
+    })
 
-        col3.metric(
-            "High Risk Loans",
-            high_risk
-        )
 
-        st.divider()
+# ════════════════════════════════════════════════════════════════
+#  API — PREDICTION LOG  (session history)
+# ════════════════════════════════════════════════════════════════
+@app.route("/api/history")
+def api_history():
+    """Returns the last 20 predictions made this session."""
+    return jsonify(list(reversed(_prediction_log[-20:])))
 
-        # Risk Category Distribution
-        st.subheader("Risk Category Distribution")
 
-        risk_counts = df["risk_category"].value_counts()
-        st.bar_chart(risk_counts)
+# ════════════════════════════════════════════════════════════════
+#  API — LOAN RECOMMENDATION ENGINE
+# ════════════════════════════════════════════════════════════════
+@app.route("/api/recommend", methods=["POST"])
+def api_recommend():
+    """
+    Full loan recommendation engine.
+    Returns products, improvement tips, term comparison, approval outlook.
+    """
+    data = request.get_json(force=True)
+    try:
+        result = build_recommendation(data)
+        return jsonify({"success": True, **result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
 
-        # Loan Amount vs Risk
-        st.subheader("Loan Amount vs Risk Score")
 
-        st.scatter_chart(
-            df,
-            x="loan_amount",
-            y="risk_score"
-        )
-
-        # Income vs Risk
-        st.subheader("Income vs Risk")
-
-        st.scatter_chart(
-            df,
-            x="income",
-            y="risk_score"
-        )
-
-        # Loan Purpose Analysis
-        st.subheader("Risk by Loan Purpose")
-
-        purpose_risk = df.groupby(
-            "purpose"
-        )["risk_score"].mean()
-
-        st.bar_chart(purpose_risk)
-
-        # Highest Risk Loans
-        st.subheader("Highest Risk Loans")
-
-        high_risk_loans = df.sort_values(
-            "risk_score",
-            ascending=False
-        ).head(10)
-
-        st.dataframe(high_risk_loans)
-
-        # Recent Predictions
-        st.subheader("Recent Predictions")
-
-        st.dataframe(df.tail(10))
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
