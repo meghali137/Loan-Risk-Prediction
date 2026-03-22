@@ -267,4 +267,3 @@ The Live Predictor tab has one-click buttons to auto-fill all three examples.
 - **Chart.js 4.4** · **Inter + JetBrains Mono + Playfair Display** (fonts)
 
 ---
-
